@@ -2057,6 +2057,7 @@ html&gt;body{padding:0}&lt;/style&gt;
  const touchPointers=new Map();
  function setZoom(value){
    radius=Math.max(1.5,Math.min(18000,value));
+   target.y=Math.max(target.y,.1-radius*Math.sin(elevation));
    scene.fog.near=Math.max(65,radius*2);scene.fog.far=Math.max(230,radius*6);draw();
  }
  function touchPair(){
