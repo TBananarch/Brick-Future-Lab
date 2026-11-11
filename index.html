@@ -1881,12 +1881,12 @@ html&gt;body{padding:0}&lt;/style&gt;
  const root=document.getElementById('brick-future-lab'),stage=root.querySelector('.lab-stage'),status=root.querySelector('.lab-status');
  if(!window.THREE){status.textContent='3D preview could not load.';return;}
  const T=window.THREE,scene=new T.Scene(),dark=matchMedia('(prefers-color-scheme: dark)');
- let renderer;try{renderer=new T.WebGLRenderer({antialias:true,alpha:false});}catch(e){status.textContent='WebGL is unavailable.';return;}
+ let renderer;try{renderer=new T.WebGLRenderer({antialias:true,alpha:false,logarithmicDepthBuffer:true});}catch(e){status.textContent='WebGL is unavailable.';return;}
  renderer.setPixelRatio(Math.min(devicePixelRatio,2));renderer.outputColorSpace=T.SRGBColorSpace;stage.appendChild(renderer.domElement);
  const camera=new T.PerspectiveCamera(46,1,.025,35000),target=new T.Vector3(0,0,-10);
  const hemi=new T.HemisphereLight(0xffffff,0x888888,2.3);scene.add(hemi);
  const sun=new T.DirectionalLight(0xffffff,2.4);sun.position.set(-8,18,6);scene.add(sun);
- const ground=new T.Mesh(new T.PlaneGeometry(60000,60000),new T.MeshStandardMaterial({color:0xb5b8a9,roughness:1}));ground.rotation.x=-Math.PI/2;ground.position.y=-.065;scene.add(ground);
+ const ground=new T.Mesh(new T.PlaneGeometry(200000,200000),new T.MeshStandardMaterial({color:0xf1f1f1,roughness:1,side:T.DoubleSide}));ground.rotation.x=-Math.PI/2;ground.position.y=-.18;scene.add(ground);
  const tile=document.createElement('canvas');tile.width=128;tile.height=256;const ctx=tile.getContext('2d');
  ctx.fillStyle='#b34839';ctx.fillRect(0,0,128,256);
  let seed=19;function rand(){seed=(seed*1664525+1013904223)&gt;&gt;&gt;0;return seed/4294967296;}
@@ -1942,7 +1942,7 @@ html&gt;body{padding:0}&lt;/style&gt;
 
  let radius=15,azimuth=.75,elevation=.64;
  function palette(){const bg=0xfafafa;scene.background=new T.Color(bg);scene.fog=new T.Fog(bg,65,230);ground.material.color.setHex(0xf1f1f1);draw();}
- function draw(){camera.position.set(target.x+radius*Math.sin(azimuth)*Math.cos(elevation),target.y+radius*Math.sin(elevation),target.z+radius*Math.cos(azimuth)*Math.cos(elevation));camera.lookAt(target);renderer.render(scene,camera);}
+ function draw(){camera.near=Math.max(.05,radius/2000);camera.far=Math.max(1000,radius*8);camera.updateProjectionMatrix();camera.position.set(target.x+radius*Math.sin(azimuth)*Math.cos(elevation),target.y+radius*Math.sin(elevation),target.z+radius*Math.cos(azimuth)*Math.cos(elevation));camera.lookAt(target);renderer.render(scene,camera);}
  function resize(){const w=stage.clientWidth,h=stage.clientHeight;renderer.setSize(w,h);camera.aspect=w/h;camera.updateProjectionMatrix();draw();}
  let pointer=null;
  stage.addEventListener('pointerdown',e=&gt;{pointer={x:e.clientX,y:e.clientY};stage.setPointerCapture(e.pointerId);});
