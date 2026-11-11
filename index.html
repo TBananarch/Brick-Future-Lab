@@ -1861,7 +1861,7 @@ html&gt;body{padding:0}&lt;/style&gt;
 
 
 &lt;div id=&quot;brick-future-lab&quot; aria-label=&quot;Brick Future Lab sidewalk preview&quot;&gt;
-  &lt;div class=&quot;lab-stage&quot; role=&quot;img&quot; aria-label=&quot;A red brick sidewalk through a black-and-white sketch streetscape, with houses and shops on one side and driveways and a road on the other. Drag to orbit and scroll to zoom.&quot;&gt;&lt;/div&gt;
+  &lt;div class=&quot;lab-stage&quot; role=&quot;img&quot; aria-label=&quot;A red brick sidewalk through a black-and-white sketch streetscape, with houses and shops on one side and driveways and a road on the other. Drag to orbit, Shift plus left-drag to pan, and scroll to zoom.&quot;&gt;&lt;/div&gt;
   &lt;button type=&quot;button&quot; disabled aria-label=&quot;What else — awaiting the next composition&quot;&gt;What else&lt;/button&gt;
   &lt;span class=&quot;lab-status&quot; role=&quot;status&quot;&gt;Loading&lt;/span&gt;
 &lt;/div&gt;
@@ -1887,16 +1887,21 @@ html&gt;body{padding:0}&lt;/style&gt;
  const hemi=new T.HemisphereLight(0xffffff,0x888888,2.3);scene.add(hemi);
  const sun=new T.DirectionalLight(0xffffff,2.4);sun.position.set(-8,18,6);scene.add(sun);
  const ground=new T.Mesh(new T.PlaneGeometry(200000,200000),new T.MeshStandardMaterial({color:0xf1f1f1,roughness:1,side:T.DoubleSide}));ground.rotation.x=-Math.PI/2;ground.position.y=-.18;scene.add(ground);
- const tile=document.createElement('canvas');tile.width=128;tile.height=256;const ctx=tile.getContext('2d');
- ctx.fillStyle='#b34839';ctx.fillRect(0,0,128,256);
+
+ const tile=document.createElement('canvas');tile.width=576;tile.height=2048;const ctx=tile.getContext('2d');
  let seed=19;function rand(){seed=(seed*1664525+1013904223)&gt;&gt;&gt;0;return seed/4294967296;}
- for(let i=0;i&lt;11000;i++){const v=Math.floor(95+rand()*80);ctx.fillStyle='rgba('+v+','+Math.floor(v*.65)+','+Math.floor(v*.48)+',.22)';ctx.fillRect(rand()*128,rand()*256,1+rand()*2,1+rand()*2);}
- ctx.strokeStyle='#66332d';ctx.lineWidth=2;ctx.strokeRect(1,1,126,254);
- const tex=new T.CanvasTexture(tile);tex.wrapS=tex.wrapT=T.RepeatWrapping;tex.repeat.set(18,50555);tex.colorSpace=T.SRGBColorSpace;tex.anisotropy=renderer.capabilities.getMaxAnisotropy();
+ const reds=['#a94c3d','#b95644','#c26750','#954333','#ad5344','#bd604a','#a44738','#c16b55','#9d493d','#b85b48'];
+ for(let row=0;row&lt;32;row++)for(let col=0;col&lt;18;col++){
+   const x=col*32,y=row*64;
+   ctx.fillStyle=reds[Math.floor(rand()*reds.length)];ctx.fillRect(x,y,32,64);
+   for(let i=0;i&lt;48;i++){ctx.fillStyle=rand()&gt;.5?'rgba(255,235,220,.10)':'rgba(45,20,15,.10)';ctx.fillRect(x+rand()*31,y+rand()*63,1,1);}
+   ctx.strokeStyle='rgba(65,35,30,.48)';ctx.lineWidth=.8;ctx.strokeRect(x+.4,y+.4,31.2,63.2);
+ }
+  const tex=new T.CanvasTexture(tile);tex.wrapS=tex.wrapT=T.RepeatWrapping;tex.repeat.set(1,50555/32);tex.colorSpace=T.SRGBColorSpace;tex.anisotropy=renderer.capabilities.getMaxAnisotropy();
  // Exact inventory: 50,555 rows of 18 whole pavers plus a final row of 10.
  const width=1.8288,brickLength=.2032,length=50555*brickLength;
  const paving=new T.Mesh(new T.PlaneGeometry(width,length),new T.MeshStandardMaterial({map:tex,roughness:.94}));paving.rotation.x=-Math.PI/2;paving.position.z=-length/2;scene.add(paving);
- const lastTex=tex.clone();lastTex.repeat.set(10,1);lastTex.needsUpdate=true;
+ const lastTex=tex.clone();lastTex.repeat.set(10/18,1/32);lastTex.needsUpdate=true;
  const last=new T.Mesh(new T.PlaneGeometry(10*.1016,brickLength),new T.MeshStandardMaterial({map:lastTex,roughness:.94}));last.rotation.x=-Math.PI/2;last.position.set(-width/2+10*.1016/2,0,-length-brickLength/2);scene.add(last);
  const edgeMaterial=new T.MeshStandardMaterial({color:0x70332d,roughness:1});
  for(const x of [-width/2,width/2]){const edge=new T.Mesh(new T.BoxGeometry(.008,.06,length),edgeMaterial);edge.position.set(x,-.03,-length/2);scene.add(edge);}
@@ -1938,6 +1943,7 @@ html&gt;body{padding:0}&lt;/style&gt;
  }
 
 
+ const movers=[];
  const charcoal=new T.MeshBasicMaterial({color:0x363636});
  const pale=new T.MeshBasicMaterial({color:0xd2d2d2});
  const black=new T.MeshBasicMaterial({color:0x222222});
@@ -1957,7 +1963,7 @@ html&gt;body{padding:0}&lt;/style&gt;
    const hub=part(parent,new T.CylinderGeometry(r*.5,r*.5,.16,12),paper,x,y,z,false);hub.rotation.z=Math.PI/2;
  }
  function car(x,z,angle,kind){
-   const g=new T.Group();g.position.set(x,0,z);g.rotation.y=angle;scene.add(g);
+   const g=new T.Group();g.position.set(x,0,z);g.rotation.y=angle;scene.add(g);movers.push({group:g,start:z,direction:Math.cos(angle),speed:1.6,person:false});
    const suv=kind===1,van=kind===2,len=van?4.9:4.25;
    cube(g,0,.53,0,1.75,.55,len,kind%2?paper:pale);
    cube(g,0,1.09,-.12,1.48,suv||van?.85:.64,van?3.1:2.3,paper);
@@ -1974,7 +1980,7 @@ html&gt;body{padding:0}&lt;/style&gt;
  [[4,-7,0,0],[8,-23,Math.PI,1],[4,-48,0,2],[8,-76,Math.PI,0],[4,-112,0,1],[8,-161,Math.PI,0]].forEach(a=&gt;car(...a));
  function head(g,y,material=paper){return part(g,new T.SphereGeometry(.115,12,8),material,0,y,0,false);}
  function person(x,z,scale,angle,kind){
-   const g=new T.Group();g.position.set(x,.012,z);g.rotation.y=angle;g.scale.setScalar(scale);scene.add(g);
+   const g=new T.Group();g.position.set(x,.012,z);g.rotation.y=angle;g.scale.setScalar(scale);scene.add(g);movers.push({group:g,start:z,direction:Math.cos(angle),speed:kind==='cane'?.15:.3,person:true,seated:kind==='chair',phase:Math.abs(z)*.7,scale});
    const seated=kind==='chair',hip=seated?.58:.87,shoulder=seated?1.01:1.32;
    part(g,new T.CylinderGeometry(.17,.14,shoulder-hip,8),kind==='coat'?charcoal:gray,0,(hip+shoulder)/2,0);
    head(g,shoulder+.19);
@@ -2004,10 +2010,50 @@ html&gt;body{padding:0}&lt;/style&gt;
  function draw(){camera.near=Math.max(.05,radius/2000);camera.far=Math.max(1000,radius*8);camera.updateProjectionMatrix();camera.position.set(target.x+radius*Math.sin(azimuth)*Math.cos(elevation),target.y+radius*Math.sin(elevation),target.z+radius*Math.cos(azimuth)*Math.cos(elevation));camera.lookAt(target);renderer.render(scene,camera);}
  function resize(){const w=stage.clientWidth,h=stage.clientHeight;renderer.setSize(w,h);camera.aspect=w/h;camera.updateProjectionMatrix();draw();}
  let pointer=null;
- stage.addEventListener('pointerdown',e=&gt;{pointer={x:e.clientX,y:e.clientY};stage.setPointerCapture(e.pointerId);});
- stage.addEventListener('pointermove',e=&gt;{if(!pointer)return;azimuth-=(e.clientX-pointer.x)*.007;elevation=Math.max(.07,Math.min(1.5,elevation+(e.clientY-pointer.y)*.006));pointer={x:e.clientX,y:e.clientY};draw();});
+ stage.addEventListener('pointerdown',e=&gt;{if(e.button!==0)return;pointer={x:e.clientX,y:e.clientY};stage.setPointerCapture(e.pointerId);});
+ stage.addEventListener('pointermove',e=&gt;{
+   if(!pointer)return;
+   const dx=e.clientX-pointer.x,dy=e.clientY-pointer.y;
+   if(e.shiftKey){
+     const scale=2*radius*Math.tan(camera.fov*Math.PI/360)/Math.max(1,stage.clientHeight);
+     const forward=dy/Math.max(.2,Math.sin(elevation));
+     target.x-=scale*(dx*Math.cos(azimuth)+forward*Math.sin(azimuth));
+     target.z+=scale*(dx*Math.sin(azimuth)-forward*Math.cos(azimuth));
+   }else{
+     azimuth-=dx*.007;elevation=Math.max(.07,Math.min(1.5,elevation+dy*.006));
+   }
+   pointer={x:e.clientX,y:e.clientY};draw();
+ });
  stage.addEventListener('pointerup',()=&gt;{pointer=null;});stage.addEventListener('pointercancel',()=&gt;{pointer=null;});
  stage.addEventListener('wheel',e=&gt;{e.preventDefault();radius=Math.max(1.5,Math.min(18000,radius*Math.exp(e.deltaY*.0015)));scene.fog.near=Math.max(65,radius*2);scene.fog.far=Math.max(230,radius*6);draw();},{passive:false});
+ 
+ const reduceMotion=matchMedia('(prefers-reduced-motion: reduce)');
+ for(const mover of movers){
+   mover.materials=[];
+   mover.group.traverse(o=&gt;{if(o.material){o.material=o.material.clone();o.material.transparent=true;mover.materials.push(o.material);}});
+   mover.limbs=mover.person&amp;&amp;!mover.seated?mover.group.children.filter(o=&gt;o.geometry&amp;&amp;o.geometry.type==='CylinderGeometry'&amp;&amp;o.geometry.parameters.radiusTop&lt;.08).map((o,i)=&gt;({mesh:o,rotation:o.quaternion.clone(),phase:i%2?Math.PI:0})):[];
+ }
+ let animationTime=0,previousFrame=0;
+ function animate(timestamp){
+   if(!root.isConnected){renderer.setAnimationLoop(null);return;}
+   const dt=previousFrame?Math.min((timestamp-previousFrame)/1000,.05):0;previousFrame=timestamp;
+   if(reduceMotion.matches)return;
+   animationTime+=dt;
+   for(const mover of movers){
+     const z=-200+((mover.start+200+mover.direction*mover.speed*animationTime)%198+198)%198;
+     mover.group.position.z=z;
+     const fade=Math.min(1,(z+200)/12,(-2-z)/5);
+     for(const material of mover.materials)material.opacity=Math.max(0,fade);
+     if(mover.person){
+       const phase=animationTime*3+mover.phase;
+       mover.group.position.y=.012+(mover.seated?0:Math.sin(phase*2)*.009*mover.scale);
+       for(const limb of mover.limbs){limb.mesh.quaternion.copy(limb.rotation);limb.mesh.rotateX(Math.sin(phase+limb.phase)*.16);}
+     }
+   }
+   draw();
+ }
+ renderer.setAnimationLoop(animate);
+
  dark.addEventListener('change',palette);new ResizeObserver(resize).observe(stage);palette();resize();status.textContent='';
 })();
 &lt;/script&gt;
