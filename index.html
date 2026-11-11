@@ -2028,14 +2028,16 @@ html&gt;body{padding:0}&lt;/style&gt;
  stage.addEventListener('wheel',e=&gt;{e.preventDefault();radius=Math.max(1.5,Math.min(18000,radius*Math.exp(e.deltaY*.0015)));scene.fog.near=Math.max(65,radius*2);scene.fog.far=Math.max(230,radius*6);draw();},{passive:false});
  
 
- function horizontalLandmark(startZ){
+ function horizontalLandmark(startZ,available=443.1792){
    const g=new T.Group();g.position.set(-70,28.45,startZ);g.rotation.x=-Math.PI/2;scene.add(g);
    const tiers=[
      [0,60,129,57],[60,95,105,50],[95,260,73,40],
      [260,330,58,32],[330,365,37,26],[365,381,25,20],
      [381,408,9,9],[408,443.1792,1.5,1.5]
    ];
-   for(const [bottom,top,w,d] of tiers){
+   for(const [bottom,upper,w,d] of tiers){
+     if(bottom&gt;=available)continue;
+     const top=Math.min(upper,available);
      cube(g,0,(bottom+top)/2,0,w,top-bottom,d,paper);
      if(w&lt;5)continue;
      const points=[];
@@ -2049,8 +2051,9 @@ html&gt;body{padding:0}&lt;/style&gt;
      g.add(new T.LineSegments(geometry,ink));
    }
  }
- horizontalLandmark(-225);
- horizontalLandmark(-680);
+ for(let distance=225;distance&lt;length+brickLength;distance+=443.1792){
+   horizontalLandmark(-distance,Math.min(443.1792,length+brickLength-distance));
+ }
 
  const reduceMotion=matchMedia('(prefers-reduced-motion: reduce)');
  for(const mover of movers){
