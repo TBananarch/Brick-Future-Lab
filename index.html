@@ -2052,7 +2052,8 @@ html&gt;body{padding:0}&lt;/style&gt;
  function resize(){const w=stage.clientWidth,h=stage.clientHeight;renderer.setSize(w,h);camera.aspect=w/h;camera.updateProjectionMatrix();draw();}
 
 
- let pointer=null,touchGesture=null;
+
+ let pointer=null,touchGesture=null,touchFramePending=false;
  const touchPointers=new Map();
  function setZoom(value){
    radius=Math.max(1.5,Math.min(18000,value));
@@ -2063,18 +2064,67 @@ html&gt;body{padding:0}&lt;/style&gt;
    const a=points[0],b=points[1];
    return{distance:Math.hypot(a.x-b.x,a.y-b.y),x:(a.x+b.x)/2,y:(a.y+b.y)/2,angle:Math.atan2(b.y-a.y,b.x-a.x)};
  }
+ function cameraPoint(){
+   return{x:target.x+radius*Math.sin(azimuth)*Math.cos(elevation),y:target.y+radius*Math.sin(elevation),z:target.z+radius*Math.cos(azimuth)*Math.cos(elevation)};
+ }
+ function groundPoint(x,y){
+   const rect=stage.getBoundingClientRect(),w=Math.max(1,rect.width),h=Math.max(1,rect.height);
+   const nx=2*(x-rect.left)/w-1,ny=1-2*(y-rect.top)/h,k=Math.tan(camera.fov*Math.PI/360);
+   const sa=Math.sin(azimuth),ca=Math.cos(azimuth),se=Math.sin(elevation),ce=Math.cos(elevation);
+   const direction={x:-sa*ce+ca*nx*(w/h)*k-sa*se*ny*k,y:-se+ce*ny*k,z:-ca*ce-sa*nx*(w/h)*k-ca*se*ny*k};
+   const position=cameraPoint();if(Math.abs(direction.y)&lt;.00001)return null;
+   const distance=-position.y/direction.y;if(distance&lt;=0||!Number.isFinite(distance))return null;
+   const point={x:position.x+direction.x*distance,y:0,z:position.z+direction.z*distance};
+   return Number.isFinite(point.x)&amp;&amp;Number.isFinite(point.z)&amp;&amp;Math.hypot(point.x-position.x,position.y,point.z-position.z)&lt;=radius*12?point:null;
+ }
  function panView(dx,dy){
    const scale=2*radius*Math.tan(camera.fov*Math.PI/360)/Math.max(1,stage.clientHeight);
    const forward=dy/Math.max(.2,Math.sin(elevation));
    target.x-=scale*(dx*Math.cos(azimuth)+forward*Math.sin(azimuth));
    target.z+=scale*(dx*Math.sin(azimuth)-forward*Math.cos(azimuth));
  }
+ function captureTouchGesture(){
+   const pair=touchPair();
+   touchGesture=pair?{start:pair,lastAngle:pair.angle,twist:0,camera:cameraPoint(),target:{x:target.x,y:target.y,z:target.z},radius,azimuth,elevation,pivot:groundPoint(pair.x,pair.y)||{x:target.x,y:0,z:target.z}}:null;
+   pointer=touchPointers.size===1?[...touchPointers.values()][0]:null;
+ }
+ function deadband(value,threshold){
+   return Math.abs(value)&lt;=threshold?0:value-Math.sign(value)*threshold;
+ }
+ function transformAroundPivot(point,pivot,yaw,pitch,right,scale){
+   const x=(point.x-pivot.x)*scale,y=(point.y-pivot.y)*scale,z=(point.z-pivot.z)*scale;
+   const cy=Math.cos(yaw),sy=Math.sin(yaw),v={x:x*cy+z*sy,y,z:-x*sy+z*cy};
+   const c=Math.cos(pitch),s=Math.sin(pitch),dot=right.x*v.x+right.z*v.z;
+   return{x:pivot.x+v.x*c-right.z*v.y*s+right.x*dot*(1-c),y:pivot.y+v.y*c+(right.z*v.x-right.x*v.z)*s,z:pivot.z+v.z*c+right.x*v.y*s+right.z*dot*(1-c)};
+ }
+ function applyMapGesture(next){
+   const g=touchGesture;if(!g||!next)return;
+   g.twist+=Math.atan2(Math.sin(next.angle-g.lastAngle),Math.cos(next.angle-g.lastAngle));g.lastAngle=next.angle;
+   const yaw=deadband(g.twist,Math.PI/90)*.8;
+   const dy=deadband(next.y-g.start.y,8);
+   const desiredElevation=dy===0?g.elevation:Math.max(.12,Math.min(1.45,g.elevation-dy*.003));
+   const pitch=g.elevation-desiredElevation;
+   const zoomLog=g.start.distance&gt;0&amp;&amp;next.distance&gt;0?Math.log(g.start.distance/next.distance):0;
+   const newRadius=Math.max(1.5,Math.min(18000,g.radius*Math.exp(deadband(zoomLog,Math.log(1.02)))));
+   const scale=newRadius/g.radius,right={x:Math.cos(g.azimuth+yaw),z:-Math.sin(g.azimuth+yaw)};
+   const position=transformAroundPivot(g.camera,g.pivot,yaw,pitch,right,scale);
+   const look=transformAroundPivot(g.target,g.pivot,yaw,pitch,right,scale);
+   const lift=Math.max(0,.1-position.y);position.y+=lift;look.y+=lift;
+   const dx=position.x-look.x,dyView=position.y-look.y,dz=position.z-look.z;
+   target.x=look.x;target.y=look.y;target.z=look.z;
+   azimuth=Math.atan2(dx,dz);elevation=Math.atan2(dyView,Math.hypot(dx,dz));setZoom(newRadius);
+ }
+ function queueTouchGesture(){
+   if(touchFramePending)return;touchFramePending=true;
+   requestAnimationFrame(()=&gt;{
+     touchFramePending=false;
+     if(!landingActive&amp;&amp;touchGesture&amp;&amp;touchPointers.size&gt;=2)applyMapGesture(touchPair());
+   });
+ }
  stage.addEventListener('pointerdown',e=&gt;{
    if(landingActive||e.button!==0)return;
-   if(e.pointerType==='touch'){
-     touchPointers.set(e.pointerId,{x:e.clientX,y:e.clientY});
-     touchGesture=touchPair();pointer=touchGesture?null:{x:e.clientX,y:e.clientY};
-   }else pointer={x:e.clientX,y:e.clientY};
+   if(e.pointerType==='touch'){touchPointers.set(e.pointerId,{x:e.clientX,y:e.clientY});captureTouchGesture();}
+   else pointer={x:e.clientX,y:e.clientY};
    stage.setPointerCapture(e.pointerId);
  });
  stage.addEventListener('pointermove',e=&gt;{
@@ -2083,34 +2133,30 @@ html&gt;body{padding:0}&lt;/style&gt;
    if(isTouch){
      if(!touchPointers.has(e.pointerId))return;
      touchPointers.set(e.pointerId,{x:e.clientX,y:e.clientY});
-     if(touchPointers.size&gt;=2){
-       const next=touchPair();
-       if(touchGesture){
-         const dx=next.x-touchGesture.x,dy=next.y-touchGesture.y;
-         const twist=Math.atan2(Math.sin(next.angle-touchGesture.angle),Math.cos(next.angle-touchGesture.angle));
-         azimuth+=dx*.0045+twist*.8;
-         elevation=Math.max(.07,Math.min(1.5,elevation-dy*.004));
-         const zoom=touchGesture.distance&gt;0&amp;&amp;next.distance&gt;0?radius*touchGesture.distance/next.distance:radius;
-         setZoom(zoom);
-       }
-       touchGesture=next;return;
-     }
+     if(touchPointers.size&gt;=2){queueTouchGesture();return;}
    }
    if(!pointer)return;
    const dx=e.clientX-pointer.x,dy=e.clientY-pointer.y;
-   if(isTouch||e.shiftKey)panView(dx,dy);
+   if(isTouch){
+     const before=groundPoint(pointer.x,pointer.y),after=groundPoint(e.clientX,e.clientY);
+     if(before&amp;&amp;after){target.x+=before.x-after.x;target.z+=before.z-after.z;}
+     else panView(dx,dy);
+   }else if(e.shiftKey)panView(dx,dy);
    else{azimuth-=dx*.007;elevation=Math.max(.07,Math.min(1.5,elevation+dy*.006));}
    pointer={x:e.clientX,y:e.clientY};draw();
  });
  function finishPointer(e){
    if(e.pointerType==='touch'){
-     touchPointers.delete(e.pointerId);touchGesture=touchPair();
-     pointer=touchPointers.size===1?[...touchPointers.values()][0]:null;
+     if(!touchPointers.has(e.pointerId))return;
+     if(e.type==='pointerup'&amp;&amp;touchPointers.size&gt;=2)applyMapGesture(touchPair());
+     touchPointers.delete(e.pointerId);captureTouchGesture();
    }else pointer=null;
  }
+ function clearPointers(){touchPointers.clear();touchGesture=null;pointer=null;}
  stage.addEventListener('pointerup',finishPointer);
  stage.addEventListener('pointercancel',finishPointer);
  stage.addEventListener('lostpointercapture',finishPointer);
+ window.addEventListener('blur',clearPointers);
  stage.addEventListener('wheel',e=&gt;{if(landingActive)return;e.preventDefault();setZoom(radius*Math.exp(e.deltaY*.0015));},{passive:false});
 
  function horizontalLandmark(startZ,available=443.1792){
@@ -2391,12 +2437,13 @@ html&gt;body{padding:0}&lt;/style&gt;
    {target:[0,1,0],radius:27,azimuth:.78,elevation:.66}
  ];
  function applyScene(index){
+   clearPointers();
    sceneViews[activeScene]={target:target.toArray(),radius,azimuth,elevation};activeScene=index;
    if(index===2)buildCommons();if(index===3)buildGrove();
    const view=sceneViews[index];target.fromArray(view.target);radius=view.radius;azimuth=view.azimuth;elevation=view.elevation;
    sidewalkScene.visible=index===0;coolingScene.visible=index===1;commonsScene.visible=index===2;groveScene.visible=index===3;
    root.querySelector('.lab-scale').textContent=['6.38 miles of sidewalk (23.2 Empire State Buildings)','813 cooling cages','3b · Brick Commons · 910,000 bricks','4b · Brick Grove · 910,000 bricks'][index];
-   stage.setAttribute('aria-label',['Red brick sidewalk.','Cooling station with metal cages, poles, and fabric canopies.','Circular stepped brick seating commons with gathering spaces.','A garden of winding perforated red brick screens and walkable passages.'][index]+' Mouse: drag to orbit, Shift-drag to pan, scroll to zoom. Touch: one finger pans; two fingers rotate; pinch or spread zooms.');
+   stage.setAttribute('aria-label',['Red brick sidewalk.','Cooling station with metal cages, poles, and fabric canopies.','Circular stepped brick seating commons with gathering spaces.','A garden of winding perforated red brick screens and walkable passages.'][index]+' Mouse: drag to orbit, Shift-drag to pan, scroll to zoom. Touch: drag one finger to pan; twist two fingers to turn; drag two fingers vertically to tilt; pinch or spread to zoom.');
    scene.fog.near=Math.max(65,radius*2);scene.fog.far=Math.max(230,radius*6);
    updateCageDetail();draw();
  }
