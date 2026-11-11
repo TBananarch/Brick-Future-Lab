@@ -2088,8 +2088,8 @@ html&gt;body{padding:0}&lt;/style&gt;
        if(touchGesture){
          const dx=next.x-touchGesture.x,dy=next.y-touchGesture.y;
          const twist=Math.atan2(Math.sin(next.angle-touchGesture.angle),Math.cos(next.angle-touchGesture.angle));
-         azimuth-=dx*.007+twist;
-         elevation=Math.max(.07,Math.min(1.5,elevation+dy*.006));
+         azimuth+=dx*.0045+twist*.8;
+         elevation=Math.max(.07,Math.min(1.5,elevation-dy*.004));
          const zoom=touchGesture.distance&gt;0&amp;&amp;next.distance&gt;0?radius*touchGesture.distance/next.distance:radius;
          setZoom(zoom);
        }
