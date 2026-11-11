@@ -2051,51 +2051,60 @@ html&gt;body{padding:0}&lt;/style&gt;
  function draw(){if(landingActive){drawRain(0);return;}camera.near=Math.max(.05,radius/2000);camera.far=Math.max(1000,radius*8);camera.updateProjectionMatrix();camera.position.set(target.x+radius*Math.sin(azimuth)*Math.cos(elevation),target.y+radius*Math.sin(elevation),target.z+radius*Math.cos(azimuth)*Math.cos(elevation));camera.lookAt(target);updateCageDetail();renderer.render(scene,camera);}
  function resize(){const w=stage.clientWidth,h=stage.clientHeight;renderer.setSize(w,h);camera.aspect=w/h;camera.updateProjectionMatrix();draw();}
 
- let pointer=null,pinchDistance=null;
+
+ let pointer=null,touchGesture=null;
  const touchPointers=new Map();
  function setZoom(value){
    radius=Math.max(1.5,Math.min(18000,value));
    scene.fog.near=Math.max(65,radius*2);scene.fog.far=Math.max(230,radius*6);draw();
  }
- function touchDistance(){
-   const points=[...touchPointers.values()];
-   return points.length&lt;2?null:Math.hypot(points[0].x-points[1].x,points[0].y-points[1].y);
+ function touchPair(){
+   const points=[...touchPointers.values()];if(points.length&lt;2)return null;
+   const a=points[0],b=points[1];
+   return{distance:Math.hypot(a.x-b.x,a.y-b.y),x:(a.x+b.x)/2,y:(a.y+b.y)/2,angle:Math.atan2(b.y-a.y,b.x-a.x)};
+ }
+ function panView(dx,dy){
+   const scale=2*radius*Math.tan(camera.fov*Math.PI/360)/Math.max(1,stage.clientHeight);
+   const forward=dy/Math.max(.2,Math.sin(elevation));
+   target.x-=scale*(dx*Math.cos(azimuth)+forward*Math.sin(azimuth));
+   target.z+=scale*(dx*Math.sin(azimuth)-forward*Math.cos(azimuth));
  }
  stage.addEventListener('pointerdown',e=&gt;{
    if(landingActive||e.button!==0)return;
    if(e.pointerType==='touch'){
      touchPointers.set(e.pointerId,{x:e.clientX,y:e.clientY});
-     if(touchPointers.size&gt;=2){pinchDistance=touchDistance();pointer=null;}
-     else pointer={x:e.clientX,y:e.clientY};
+     touchGesture=touchPair();pointer=touchGesture?null:{x:e.clientX,y:e.clientY};
    }else pointer={x:e.clientX,y:e.clientY};
    stage.setPointerCapture(e.pointerId);
  });
  stage.addEventListener('pointermove',e=&gt;{
    if(landingActive)return;
-   if(e.pointerType==='touch'){
+   const isTouch=e.pointerType==='touch';
+   if(isTouch){
      if(!touchPointers.has(e.pointerId))return;
      touchPointers.set(e.pointerId,{x:e.clientX,y:e.clientY});
      if(touchPointers.size&gt;=2){
-       const distance=touchDistance();
-       if(pinchDistance&gt;0&amp;&amp;distance&gt;0)setZoom(radius*pinchDistance/distance);
-       pinchDistance=distance;return;
+       const next=touchPair();
+       if(touchGesture){
+         const dx=next.x-touchGesture.x,dy=next.y-touchGesture.y;
+         const twist=Math.atan2(Math.sin(next.angle-touchGesture.angle),Math.cos(next.angle-touchGesture.angle));
+         azimuth-=dx*.007+twist;
+         elevation=Math.max(.07,Math.min(1.5,elevation+dy*.006));
+         const zoom=touchGesture.distance&gt;0&amp;&amp;next.distance&gt;0?radius*touchGesture.distance/next.distance:radius;
+         setZoom(zoom);
+       }
+       touchGesture=next;return;
      }
    }
    if(!pointer)return;
    const dx=e.clientX-pointer.x,dy=e.clientY-pointer.y;
-   if(e.shiftKey){
-     const scale=2*radius*Math.tan(camera.fov*Math.PI/360)/Math.max(1,stage.clientHeight);
-     const forward=dy/Math.max(.2,Math.sin(elevation));
-     target.x-=scale*(dx*Math.cos(azimuth)+forward*Math.sin(azimuth));
-     target.z+=scale*(dx*Math.sin(azimuth)-forward*Math.cos(azimuth));
-   }else{
-     azimuth-=dx*.007;elevation=Math.max(.07,Math.min(1.5,elevation+dy*.006));
-   }
+   if(isTouch||e.shiftKey)panView(dx,dy);
+   else{azimuth-=dx*.007;elevation=Math.max(.07,Math.min(1.5,elevation+dy*.006));}
    pointer={x:e.clientX,y:e.clientY};draw();
  });
  function finishPointer(e){
    if(e.pointerType==='touch'){
-     touchPointers.delete(e.pointerId);pinchDistance=null;
+     touchPointers.delete(e.pointerId);touchGesture=touchPair();
      pointer=touchPointers.size===1?[...touchPointers.values()][0]:null;
    }else pointer=null;
  }
@@ -2387,7 +2396,7 @@ html&gt;body{padding:0}&lt;/style&gt;
    const view=sceneViews[index];target.fromArray(view.target);radius=view.radius;azimuth=view.azimuth;elevation=view.elevation;
    sidewalkScene.visible=index===0;coolingScene.visible=index===1;commonsScene.visible=index===2;groveScene.visible=index===3;
    root.querySelector('.lab-scale').textContent=['6.38 miles of sidewalk (23.2 Empire State Buildings)','813 cooling cages','3b · Brick Commons · 910,000 bricks','4b · Brick Grove · 910,000 bricks'][index];
-   stage.setAttribute('aria-label',['Red brick sidewalk.','Cooling station with metal cages, poles, and fabric canopies.','Circular stepped brick seating commons with gathering spaces.','A garden of winding perforated red brick screens and walkable passages.'][index]+' Drag to orbit, Shift plus left-drag to pan, scroll or pinch to zoom.');
+   stage.setAttribute('aria-label',['Red brick sidewalk.','Cooling station with metal cages, poles, and fabric canopies.','Circular stepped brick seating commons with gathering spaces.','A garden of winding perforated red brick screens and walkable passages.'][index]+' Mouse: drag to orbit, Shift-drag to pan, scroll to zoom. Touch: one finger pans; two fingers rotate; pinch or spread zooms.');
    scene.fog.near=Math.max(65,radius*2);scene.fog.far=Math.max(230,radius*6);
    updateCageDetail();draw();
  }
