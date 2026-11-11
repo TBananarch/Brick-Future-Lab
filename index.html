@@ -2027,6 +2027,31 @@ html&gt;body{padding:0}&lt;/style&gt;
  stage.addEventListener('pointerup',()=&gt;{pointer=null;});stage.addEventListener('pointercancel',()=&gt;{pointer=null;});
  stage.addEventListener('wheel',e=&gt;{e.preventDefault();radius=Math.max(1.5,Math.min(18000,radius*Math.exp(e.deltaY*.0015)));scene.fog.near=Math.max(65,radius*2);scene.fog.far=Math.max(230,radius*6);draw();},{passive:false});
  
+
+ function horizontalLandmark(startZ){
+   const g=new T.Group();g.position.set(-70,28.45,startZ);g.rotation.x=-Math.PI/2;scene.add(g);
+   const tiers=[
+     [0,60,129,57],[60,95,105,50],[95,260,73,40],
+     [260,330,58,32],[330,365,37,26],[365,381,25,20],
+     [381,408,9,9],[408,443.1792,1.5,1.5]
+   ];
+   for(const [bottom,top,w,d] of tiers){
+     cube(g,0,(bottom+top)/2,0,w,top-bottom,d,paper);
+     if(w&lt;5)continue;
+     const points=[];
+     for(let y=bottom+4;y&lt;top;y+=7.6){
+       points.push(-w/2,y,d/2+.03,w/2,y,d/2+.03);
+     }
+     for(let x=-w/2+6;x&lt;w/2;x+=6){
+       points.push(x,bottom+.2,d/2+.03,x,top-.2,d/2+.03);
+     }
+     const geometry=new T.BufferGeometry();geometry.setAttribute('position',new T.Float32BufferAttribute(points,3));
+     g.add(new T.LineSegments(geometry,ink));
+   }
+ }
+ horizontalLandmark(-225);
+ horizontalLandmark(-680);
+
  const reduceMotion=matchMedia('(prefers-reduced-motion: reduce)');
  for(const mover of movers){
    mover.materials=[];
