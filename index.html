@@ -1860,10 +1860,16 @@ html&gt;body{padding:0}&lt;/style&gt;
 
 
 
-&lt;div id=&quot;brick-future-lab&quot; aria-label=&quot;Brick Future Lab sidewalk preview&quot;&gt;
+&lt;div id=&quot;brick-future-lab&quot; data-mode=&quot;landing&quot; aria-label=&quot;Brick Future Lab&quot;&gt;
+  &lt;section class=&quot;lab-landing&quot; aria-labelledby=&quot;lab-intro&quot;&gt;
+    &lt;div class=&quot;lab-intro-content&quot;&gt;
+      &lt;h1 id=&quot;lab-intro&quot;&gt;1 million bricks are expected to be thrown away between 2025-2026, &lt;span&gt;what can 1 million bricks do?&lt;/span&gt;&lt;/h1&gt;
+      &lt;button class=&quot;lab-start&quot; type=&quot;button&quot;&gt;Let’s find out!&lt;span aria-hidden=&quot;true&quot;&gt;↗&lt;/span&gt;&lt;/button&gt;
+    &lt;/div&gt;
+  &lt;/section&gt;
   &lt;h1 class=&quot;lab-scale&quot;&gt;6.38 miles of sidewalk &lt;span&gt;(23.2 Empire State Buildings)&lt;/span&gt;&lt;/h1&gt;
   &lt;div class=&quot;lab-stage&quot; role=&quot;img&quot; aria-label=&quot;A red brick sidewalk through a black-and-white sketch streetscape, with houses and shops on one side and driveways and a road on the other. Drag to orbit, Shift plus left-drag to pan, and scroll to zoom.&quot;&gt;&lt;/div&gt;
-  &lt;button type=&quot;button&quot; disabled aria-label=&quot;What else — awaiting the next composition&quot;&gt;What else&lt;/button&gt;
+  &lt;button class=&quot;lab-next&quot; type=&quot;button&quot; disabled aria-label=&quot;What else — awaiting the next composition&quot;&gt;What else&lt;/button&gt;
   &lt;span class=&quot;lab-status&quot; role=&quot;status&quot;&gt;Loading&lt;/span&gt;
 &lt;/div&gt;
 &lt;style&gt;
@@ -1873,10 +1879,24 @@ html&gt;body{padding:0}&lt;/style&gt;
 #brick-future-lab .lab-stage{width:100%;height:100%;touch-action:none;cursor:grab}
 #brick-future-lab .lab-stage:active{cursor:grabbing}
 #brick-future-lab canvas{display:block;width:100%;height:100%}
-#brick-future-lab button{position:absolute;bottom:30px;left:50%;transform:translateX(-50%);padding:15px 29px;border:1px solid #353535;border-radius:40px;background:#fafafa;color:inherit;font:500 15px Arial,sans-serif;letter-spacing:.02em}
-#brick-future-lab button:disabled{opacity:.65;cursor:default}
+#brick-future-lab .lab-next{position:absolute;bottom:30px;left:50%;transform:translateX(-50%);padding:15px 29px;border:1px solid #353535;border-radius:40px;background:#fafafa;color:inherit;font:500 15px Arial,sans-serif;letter-spacing:.02em}
+#brick-future-lab .lab-next:disabled{opacity:.65;cursor:default}
 #brick-future-lab .lab-status{position:absolute;bottom:100px;left:22px;font:14px Arial,sans-serif}
 @media(max-width:480px){#brick-future-lab{height:100dvh}}
+
+#brick-future-lab[data-mode=&quot;landing&quot;] .lab-scale,#brick-future-lab[data-mode=&quot;landing&quot;] .lab-next,#brick-future-lab[data-mode=&quot;landing&quot;] .lab-status{display:none}
+#brick-future-lab .lab-landing{position:absolute;inset:0;z-index:5;display:grid;place-items:center;padding:clamp(24px,5vw,72px);box-sizing:border-box;background:radial-gradient(ellipse at center,rgba(250,250,250,.93) 0%,rgba(250,250,250,.82) 26%,rgba(250,250,250,.2) 66%,transparent 85%);color:#161616;overflow:auto}
+#brick-future-lab .lab-landing[hidden]{display:none}
+#brick-future-lab .lab-intro-content{width:100%;max-width:960px;text-align:center}
+#brick-future-lab #lab-intro{max-width:880px;margin:0 auto;font:400 clamp(22px,2.6vw,38px)/1.3 Arial,sans-serif;letter-spacing:-.035em;text-wrap:balance}
+#brick-future-lab #lab-intro span{display:block;margin-top:clamp(18px,3vw,32px);font-weight:700;font-size:clamp(39px,5.5vw,78px);line-height:1.04;letter-spacing:-.055em;text-wrap:balance}
+#brick-future-lab .lab-start{display:inline-flex;align-items:center;justify-content:center;gap:22px;position:static;transform:none;margin-top:clamp(28px,4vw,48px);padding:19px 29px;min-height:60px;border:1px solid #151515;border-radius:999px;background:#151515;color:#fff;font:500 clamp(17px,1.7vw,22px)/1.2 Arial,sans-serif;cursor:pointer;box-shadow:0 5px 0 rgba(0,0,0,.12);transition:transform .2s ease,background .2s ease,box-shadow .2s ease,border-color .2s ease}
+#brick-future-lab .lab-start span{display:inline-block;font-size:1.2em;transition:transform .2s ease}
+#brick-future-lab .lab-start:hover{transform:translateY(-4px);background:#a94c3d;border-color:#a94c3d;box-shadow:0 12px 28px rgba(105,45,30,.22)}
+#brick-future-lab .lab-start:hover span{transform:translate(3px,-3px)}
+#brick-future-lab .lab-start:active{transform:translateY(-1px)}
+#brick-future-lab .lab-start:focus-visible{outline:3px solid #a94c3d;outline-offset:5px}
+@media(prefers-reduced-motion:reduce){#brick-future-lab .lab-start,#brick-future-lab .lab-start span{transition:none}}
 &lt;/style&gt;
 &lt;script src=&quot;https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.min.js&quot;&gt;&lt;/script&gt;
 &lt;script&gt;
@@ -2010,10 +2030,10 @@ html&gt;body{padding:0}&lt;/style&gt;
 
  let radius=15,azimuth=.75,elevation=.64;
  function palette(){const bg=0xfafafa;scene.background=new T.Color(bg);scene.fog=new T.Fog(bg,65,230);ground.material.color.setHex(0xf1f1f1);draw();}
- function draw(){camera.near=Math.max(.05,radius/2000);camera.far=Math.max(1000,radius*8);camera.updateProjectionMatrix();camera.position.set(target.x+radius*Math.sin(azimuth)*Math.cos(elevation),target.y+radius*Math.sin(elevation),target.z+radius*Math.cos(azimuth)*Math.cos(elevation));camera.lookAt(target);updateCageDetail();renderer.render(scene,camera);}
+ function draw(){if(landingActive){drawRain(0);return;}camera.near=Math.max(.05,radius/2000);camera.far=Math.max(1000,radius*8);camera.updateProjectionMatrix();camera.position.set(target.x+radius*Math.sin(azimuth)*Math.cos(elevation),target.y+radius*Math.sin(elevation),target.z+radius*Math.cos(azimuth)*Math.cos(elevation));camera.lookAt(target);updateCageDetail();renderer.render(scene,camera);}
  function resize(){const w=stage.clientWidth,h=stage.clientHeight;renderer.setSize(w,h);camera.aspect=w/h;camera.updateProjectionMatrix();draw();}
  let pointer=null;
- stage.addEventListener('pointerdown',e=&gt;{if(e.button!==0)return;pointer={x:e.clientX,y:e.clientY};stage.setPointerCapture(e.pointerId);});
+ stage.addEventListener('pointerdown',e=&gt;{if(landingActive||e.button!==0)return;pointer={x:e.clientX,y:e.clientY};stage.setPointerCapture(e.pointerId);});
  stage.addEventListener('pointermove',e=&gt;{
    if(!pointer)return;
    const dx=e.clientX-pointer.x,dy=e.clientY-pointer.y;
@@ -2318,7 +2338,40 @@ html&gt;body{padding:0}&lt;/style&gt;
    scene.fog.near=Math.max(65,radius*2);scene.fog.far=Math.max(230,radius*6);
    updateCageDetail();draw();
  }
- const nextButton=root.querySelector('button');nextButton.disabled=false;nextButton.setAttribute('aria-label','What else');nextButton.addEventListener('click',()=&gt;applyScene((activeScene+1)%4));
+ const nextButton=root.querySelector('.lab-next');nextButton.disabled=false;nextButton.setAttribute('aria-label','What else');nextButton.addEventListener('click',()=&gt;applyScene((activeScene+1)%4));
+
+
+ let landingActive=true;
+ const fallingScene=new T.Scene();fallingScene.background=new T.Color(0xfafafa);
+ const fallingCamera=new T.PerspectiveCamera(50,1,.1,80);fallingCamera.position.z=20;
+ const fallingGeometry=new T.BoxGeometry(1.05,.5,.32),faceColors=[];
+ for(let face=0;face&lt;6;face++)for(let v=0;v&lt;4;v++){const shade=[.8,.63,1,.57,.92,.72][face];faceColors.push(shade,shade,shade);}
+ fallingGeometry.setAttribute('color',new T.Float32BufferAttribute(faceColors,3));
+ const fallingBricks=new T.InstancedMesh(fallingGeometry,new T.MeshBasicMaterial({vertexColors:true}),54);
+ const rainPose=new T.Object3D(),rainColor=new T.Color(),rainParticles=[];
+ let rainSeed=319;
+ function rainRandom(){rainSeed=(Math.imul(rainSeed,1664525)+1013904223)&gt;&gt;&gt;0;return rainSeed/4294967296;}
+ for(let i=0;i&lt;54;i++){
+   rainParticles.push({x:(rainRandom()-.5)*2.7,y:(rainRandom()-.5)*28,z:(rainRandom()-.5)*7,speed:2+rainRandom()*2.8,rx:rainRandom()*6.28,ry:rainRandom()*6.28,rz:rainRandom()*6.28,spin:(rainRandom()-.5)*.9,scale:.55+rainRandom()*.85});
+   rainColor.setHex([0xa94c3d,0xb95644,0xc26750,0x954333,0xad5344,0xb85b48][i%6]);fallingBricks.setColorAt(i,rainColor);
+ }
+ fallingBricks.instanceColor.needsUpdate=true;fallingBricks.frustumCulled=false;fallingScene.add(fallingBricks);
+ function drawRain(dt){
+   const w=stage.clientWidth,h=stage.clientHeight;fallingCamera.aspect=w/Math.max(1,h);fallingCamera.updateProjectionMatrix();
+   const halfHeight=20*Math.tan(25*Math.PI/180),halfWidth=halfHeight*fallingCamera.aspect;
+   for(let i=0;i&lt;rainParticles.length;i++){
+     const p=rainParticles[i];p.y-=p.speed*dt;p.rx+=p.spin*dt;p.ry+=p.spin*.7*dt;p.rz+=p.spin*.4*dt;
+     if(p.y&lt; -halfHeight-4){p.y=halfHeight+3+rainRandom()*3;p.x=(rainRandom()-.5)*2.7;}
+     rainPose.position.set(p.x*halfWidth,p.y,p.z);rainPose.rotation.set(p.rx,p.ry,p.rz);rainPose.scale.setScalar(p.scale);rainPose.updateMatrix();fallingBricks.setMatrixAt(i,rainPose.matrix);
+   }
+   fallingBricks.instanceMatrix.needsUpdate=true;renderer.render(fallingScene,fallingCamera);
+ }
+ stage.setAttribute('aria-hidden','true');
+ const startButton=root.querySelector('.lab-start');
+ startButton.addEventListener('click',()=&gt;{
+   landingActive=false;stage.removeAttribute('aria-hidden');root.dataset.mode='scenes';root.querySelector('.lab-landing').hidden=true;
+   applyScene(0);nextButton.focus({preventScroll:true});
+ });
 
  const reduceMotion=matchMedia('(prefers-reduced-motion: reduce)');
  for(const mover of movers){
@@ -2330,6 +2383,7 @@ html&gt;body{padding:0}&lt;/style&gt;
  function animate(timestamp){
    if(!root.isConnected){renderer.setAnimationLoop(null);return;}
    const dt=previousFrame?Math.min((timestamp-previousFrame)/1000,.05):0;previousFrame=timestamp;
+   if(landingActive){drawRain(reduceMotion.matches?0:dt);return;}
    if(reduceMotion.matches)return;
    animationTime+=dt;
    for(const mover of movers){
